@@ -1,0 +1,24 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+typedef vector< vector<double> > Matrix; 
+
+
+int main () {
+	int n;
+	cin >> n;
+	Matrix a(n, vector <double> (n));
+	//Read the matrix a
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < n; ++j) {
+			cin >> a[i][j];
+		}
+	} 
+	//Copy the matrix a in b
+	Matrix b(n, vector <double> (n));
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < n; ++j) {
+			b[i][j] = a[i][j];
+		}
+	} 
+}
