@@ -1,0 +1,206 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <fstream> //File stream for input and output in files.
+using namespace std;
+
+typedef vector<int> VI;
+typedef vector<VI> MatrixI;
+typedef vector<double> VD;
+typedef vector<VD> Matrix;
+
+//if '*' it was verified
+
+/*void setPrecisionOutput(int n, ofstream output){
+    //n is the precision desired for the output
+    if(n < 0) cout "Error, must give a positive integer for precision".
+    else {
+        output.setf(ios::fixed);
+	    output.precision(n);
+    }
+}*/
+
+void swapPosicions (vector<int>& v, int i, int j) {
+    int a = v[i];
+    v[i] = v[j];
+    v[j] = a;
+}
+
+void swapFiles (Matrix& A, int i, int j) {//i y j son filas que han de intercambiarse
+    int n = A[0].size();
+    for (int k = 0; k < n; ++k) {
+        double aux = A[i][k];
+        A[i][k] = A[j][k];
+        A[j][k] = aux;
+    }   
+}
+
+void permutaFilas(Matrix& A, int j, vector<int>& permutaciones) {
+    //j es la columna en la que estoy
+    int n = A[0].size();
+    //Calculo el máximo de cada fila
+    VD valoresMaximos(n - j + 1);
+    for(int i = j; i < n; ++i) {
+        double valorMax = abs(A[i][j]);
+        for(int k = j; k < n; ++k) {
+            if(abs(A[i][k]) > valorMax) valorMax = abs(A[i][k]);
+        }
+        valoresMaximos[i-j] = valorMax;
+    }
+    //Calculamos la fila que hay que permutar
+    VD posicionMaxima(n-j+1); 
+    for(int i = j; i < n; ++i) {
+        posicionMaxima[i-j] = A[i][j]/valoresMaximos[i-j];
+    }
+    
+    int posMaximo = 0;
+    for(int i = 1; i < n-j+1; ++i) {
+        if(posicionMaxima[i] > posicionMaxima[posMaximo]) posMaximo = i;
+    }
+    //si la posMaximo es 0 no hacer nada
+    if (posMaximo != 0) {
+        swapFiles (A, j, posMaximo + j);//Permutamos las filas posMaximo y la j-esima de A
+        swapPosicions (permutaciones, j, posMaximo + j);//Esto para obtener P
+    }
+}
+
+void writeInFile (const Matrix& A) {
+    ofstream output;
+    
+    //setPrecisionOutput(5,output);
+    
+    output.open ("output.dat");
+    int n = A[0].size();
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            output << A[i][j] << " ";
+        }
+        output << endl;
+    }
+    output.close();
+}
+
+void readFromFile (int& n, Matrix& A) {
+    ifstream input;
+    input.open ("matriu_A.dat");
+
+    input >> n;
+    A = Matrix (n, VD (n));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            input >> A[i][j];
+        }
+    }
+    input.close();
+}
+
+void Gauss_trivial1 (Matrix& A) {
+    //si hay 0 da error
+    int n = A[0].size();
+    for (int j = 0; j < n; ++j) {
+        double diagonal = A[j][j];
+        for (int i = j + 1; i < n; ++i) { //i empieza en la fila debajo de fila j
+            double coeficient = -diagonal / A[i][j];
+            for (int k = j; k < n; ++k) { //cada fila i la recorro desde columna j
+                A[i][k] = coeficient * A[i][j] + A[j][k];
+            }
+        }
+    }
+}
+
+void Gauss_trivial2 (Matrix& A, double tol) {
+    int n = A[0].size();
+    for (int j = 0; j < n; ++j) {
+        double diagonal = A[j][j];
+        for (int i = j + 1; i < n; ++i) { //i empieza en la fila debajo de fila j
+            if (A[i][j] < tol and A[i][j] < (-1)*tol) cout << "Warning en void Gauss_Trivial(Matrix&). El coeficiente Aij es 0 o muy cercano a 0." << endl;
+            double coeficient = -diagonal / A[i][j];
+            for (int k = j; k < n; ++k) { //cada fila i la recorro desde columna j
+                A[i][k] = coeficient * A[i][j] + A[j][k];
+            }
+        }
+    }
+}
+
+void Gauss_trivial3 (Matrix& A, double tol) {
+    int n = A[0].size();
+    Matrix aux(n, VD(n,0));
+    for (int j = 0; j < n; ++j) {
+        double diagonal = A[j][j];
+        for (int i = j + 1; i < n; ++i) { //i empieza en la fila debajo de fila j
+            if (A[i][j] < tol and A[i][j] > (-1)*tol) cout << "Warning en void Gauss_Trivial(Matrix&). El coeficiente Aij es 0 o muy cercano a 0." << endl;
+            double multiplicador = -diagonal / A[i][j];
+            aux[i][j] = multiplicador;
+            for (int k = j+1; k < n; ++k) { //cada fila i la recorro desde columna j+1
+                A[i][j] = 0;
+                A[i][k] = multiplicador * A[i][j] + A[j][k];
+            }
+        }
+    }
+}
+
+void Gauss_trivial4 (Matrix& A, double tol) { //funciona
+    //esta es la descomposición que ellos me piden
+    int n = A[0].size();
+    for (int j = 0; j < n; ++j) {
+        double diagonal = A[j][j];
+        for (int i = j + 1; i < n; ++i) { //i empieza en la fila debajo de fila j
+            if (diagonal < tol and diagonal > (-1)*tol) cout << "Warning en void Gauss_Trivial(Matrix&). El coeficiente diagonal es 0 o muy cercano a 0." << endl;
+            double multiplicador = A[i][j] / diagonal;
+            A[i][j] = multiplicador;
+            for (int k = j+1; k < n; ++k) { //cada fila i la recorro desde columna j+1
+                A[i][k] = A[i][k] -multiplicador * A[j][k];
+            }
+        }
+    }
+}
+
+void Gauss_trivial5 (Matrix& A, double tol, vector<int>& permutaciones) { //funciona
+    //esta es la descomposición que ellos me piden
+    int n = A[0].size();
+    for (int j = 0; j < n; ++j) {
+        permutaFilas(A,j, permutaciones);
+        //las filas estan intercambiadas
+        double diagonal = A[j][j];
+        for (int i = j + 1; i < n; ++i) { //i empieza en la fila debajo de fila j
+            if (diagonal < tol and diagonal > (-1)*tol) cout << "Warning en void Gauss_Trivial(Matrix&). El coeficiente diagonal es 0 o muy cercano a 0." << endl;
+            double multiplicador = A[i][j] / diagonal;
+            A[i][j] = multiplicador;
+            for (int k = j+1; k < n; ++k) { //cada fila i la recorro desde columna j+1
+                A[i][k] = A[i][k] -multiplicador * A[j][k];
+            }
+        }
+    }
+}
+
+void buildP (const vector<int>& permutaciones, MatrixI& P) {
+    int n = permutaciones.size();
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (j == permutaciones[i]) P[i][j] = 1;
+            else P[i][j] = 0;
+        }
+    }
+}
+
+int main () {
+    int n;
+    Matrix A;
+    readFromFile(n,A);//*
+    Matrix copyA = A;//*
+    vector<int> permutaciones(n);
+    for (int i = 0; i < n; ++i) permutaciones[i] = i;// inicialmente (0,1,2,3,...,n-1)
+    Gauss_trivial5 (A,0.0000001,permutaciones);
+    cout << "el vector de permutaciones es " << endl;
+    for (int i = 0; i < n; ++i) cout << permutaciones[i] << " ";
+    cout << endl;
+    MatrixI P(n,vector<int> (n,0));
+    buildP(permutaciones, P);
+    cout << "la matriu P es la seguent: " << endl;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) cout << P[i][j] << " ";
+        cout << endl;
+    }
+    //Kode hier.
+    writeInFile(A);//*    
+}
